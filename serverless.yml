@@ -1,0 +1,76 @@
+service: tcb
+
+provider:
+  name: aws
+  runtime: python3.8
+  stage: admin
+  region: us-east-1
+  stackName: tcb-admin
+  apiName: tcb-admin
+  memorySize: 128
+  logRetentionInDays: 7
+  stackTags:
+    Environment: admin
+    Application: tcb
+  environment:
+    DYNAMODB_TABLE: tc-info
+    DEFAULT_HOST_NAME: eva
+    DEFAULT_HOST_ID: UH1NG3JBT
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: 
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/tc-info"
+    - Effect: Allow
+      Action:
+        - ssm:GetParameter
+      Resource:
+        - "arn:aws:ssm:${self:provider.region}:*:parameter/slack/tcb/signing_secret"
+        - "arn:aws:ssm:${self:provider.region}:*:parameter/slack/tcb/bot_oauth"
+
+package:
+  include:
+    - tcb/**
+    - handler.py
+  exclude:
+    - .git/**
+    - test/**
+
+plugins:
+  - serverless-python-requirements
+custom:
+  pythonRequirements:
+     dockerizePip: non-linux
+
+functions:
+  work:
+    handler: handler.work
+    events:
+      - schedule: cron(0 18 ? * FRI *)  # UGH utc
+      - http:
+          path: /
+          method: post
+
+resources:
+  Resources:
+    TodosDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: "Date"
+            AttributeType: N
+        KeySchema:
+          -
+            AttributeName: "Date"
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: tc-info
