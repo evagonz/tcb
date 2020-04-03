@@ -49,13 +49,19 @@ custom:
      dockerizePip: non-linux
 
 functions:
-  work:
-    handler: handler.work
+  slack:
+    handler: handler.slack
     events:
-      - schedule: cron(0 18 ? * FRI *)  # UGH utc
       - http:
           path: /
           method: post
+  cloudwatch:
+    handler: handler.cloudwatch
+    events:
+      - schedule: 
+          name: friday-afternoon-tc-cron
+          description: triggers a DM to tech chat host this week
+          rate: cron(0 18 ? * FRI *)  # UGH utc
 
 resources:
   Resources:

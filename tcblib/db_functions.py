@@ -1,13 +1,15 @@
-import boto3
 import datetime
 import os
+
+import boto3
 
 DB = boto3.client('dynamodb')
 TABLE = os.environ['DYNAMODB_TABLE']
 DEFAULT_HOST_ID = os.environ['DEFAULT_HOST_ID']
 DEFAULT_HOST_NAME = os.environ['DEFAULT_HOST_NAME']
 
-def get_date():
+
+def get_next_tech_chat_date():
     """Get date for next tech chat (will return today if today is Friday)."""
     today = datetime.date.today()
     friday = today + datetime.timedelta((4-today.weekday()) % 7)
@@ -19,7 +21,7 @@ def query_host(user_attr):
     response = DB.get_item(
         TableName=TABLE,
         Key={
-            'Date': {'N': '{0}'.format(get_date())}
+            'Date': {'N': '{0}'.format(get_next_tech_chat_date())}
         },
         ProjectionExpression='Host.#attr',
         ExpressionAttributeNames={
@@ -28,18 +30,19 @@ def query_host(user_attr):
     )
 
     if 'Item' not in response:
-        update_host(DEFAULT_HOST_ID, DEFAULT_HOST_NAME)
+        update_or_add_host(DEFAULT_HOST_ID, DEFAULT_HOST_NAME)
         host = DEFAULT_HOST_NAME
     else:
         host = response['Item']['Host']['M'][user_attr]['S']
     return host
 
-def update_host(host_id, host_name):
-    """Change or set the host."""
+
+def update_or_add_host(host_id, host_name):
+    """Change the host, or set it if there isn't one."""
     result = DB.update_item(
         TableName=TABLE,
         Key={
-            'Date': {'N': '{0}'.format(get_date())}
+            'Date': {'N': '{0}'.format(get_next_tech_chat_date())}
         },
         ExpressionAttributeNames={
             '#HN': 'Host'
@@ -58,12 +61,13 @@ def update_host(host_id, host_name):
 
     return result
 
+
 def query_all():
     """Get everything for next tech chat to send to the host."""
     response = DB.get_item(
         TableName=TABLE,
         Key={
-            'Date': {'N': '{0}'.format(get_date())}
+            'Date': {'N': '{0}'.format(get_next_tech_chat_date())}
         }
     )
 
@@ -75,7 +79,7 @@ def add_goldstar(text):
     result = DB.update_item(
         TableName=TABLE,
         Key={
-            'Date': {'N': '{0}'.format(get_date())}
+            'Date': {'N': '{0}'.format(get_next_tech_chat_date())}
         },
         ExpressionAttributeNames={
             '#GS': 'GoldStars'
