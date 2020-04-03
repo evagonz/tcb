@@ -24,6 +24,7 @@ def slack(event, context):
     if not slack_functions.validate_request(event):
         logger.error("Slack request not valid")
         return {}  # there needs to be actual error handling
+    logger.info('Slack request valid; moving on')
 
     logger.debug("Parsing params...")
     req = parse_qs(event['body'])
@@ -38,22 +39,25 @@ def slack(event, context):
         cmd_text = None
 
     if command == '/goldstar':
-        logger.debug("Adding goldstar...")
-        db_functions.add_goldstar(cmd_text)  # TODO: verify
+        logger.info("Adding goldstar...")
+        db_functions.add_goldstar(cmd_text)  # TODO: verify success
         logger.debug("Goldstar added")
-        msg = "And a gold star to *you* for your contribution to tech chat!"
+        msg = "And a gold star to *you* for your contribution to tech chat!"  # TODO: confirm date
         slack_functions.send_message(user_id=user_id, msg=msg, icon=':meow-goldstar:')
+        logger.info("Slack response sent")
 
     if command == '/tc-host':
         if cmd_text == 'me':
-            tc_host = db_functions.update_or_add_host(user_id, user_name)  # TODO: verify
+            tc_host = db_functions.update_or_add_host(user_id, user_name)  # TODO: verify success
             logger.debug("Look at me: I'm the host now")
-            msg = "You are now set to host tech chat on Friday!"
+            msg = "You are now set to host tech chat on Friday!"  # TODO: confirm date
             slack_functions.send_message(user_id=user_id, msg=msg, icon=':meow-bot:')
+            logger.info("Slack response sent")
         else:
             tc_host = db_functions.query_host('name')
-            msg = "Current host for this week: {0}\nIf you want to host, type `/tc-host me`".format(tc_host)
+            msg = "Current host for this week: {0}\nIf you want to host, type `/tc-host me`".format(tc_host)  # TODO: s/this week/date/
 
             slack_functions.send_message(user_id=user_id, msg=msg, icon=':meow-bot:')
+            logger.info("Slack response sent")
 
     return {}
