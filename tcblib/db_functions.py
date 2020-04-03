@@ -10,10 +10,20 @@ DEFAULT_HOST_NAME = os.environ['DEFAULT_HOST_NAME']
 
 
 def get_next_tech_chat_date():
-    """Get date for next tech chat (will return today if today is Friday)."""
-    today = datetime.date.today()
-    friday = today + datetime.timedelta((4-today.weekday()) % 7)
-    return friday.strftime('%Y%m%d')
+    """Get date for next tech chat.
+
+    If today is Friday, convert to UTC and compare with the Cloudwatch cron time.
+    If the gold stars have already been sent for today, add to next week.
+    """
+    today = datetime.datetime.today()
+    if today.weekday() == 4:
+        if today.utcnow().hour >= 18:
+            next_tc = today + datetime.timedelta(7)  # next week
+        else:
+            next_tc = today
+    else:
+        next_tc = today + datetime.timedelta((4-today.weekday()) % 7)
+    return next_tc.strftime('%Y%m%d')
 
 
 def query_host(user_attr):
@@ -38,7 +48,12 @@ def query_host(user_attr):
 
 
 def update_or_add_host(host_id, host_name):
-    """Change the host, or set it if there isn't one."""
+    """Change the host, or set it if there isn't one.
+
+    DynamoDB doesn't have a way to 'autofill' a default,
+    so if someone tries to see the tech chat host but it doesn't
+    exist yet, return the default and then add it afterwards.
+    """
     result = DB.update_item(
         TableName=TABLE,
         Key={
