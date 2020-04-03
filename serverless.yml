@@ -61,7 +61,7 @@ functions:
       - schedule: 
           name: friday-afternoon-tc-cron
           description: triggers a DM to tech chat host this week
-          rate: cron(0 18 ? * FRI *)  # UGH utc
+          rate: cron(55 17 ? * FRI *)  # UGH utc
 
 resources:
   Resources:
